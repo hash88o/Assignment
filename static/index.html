@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portfolio Analyst</title>
+<style>
+  :root {
+    --green-dark: #075e54; --green: #128c7e; --bubble-out: #d9fdd3; --bubble-in: #ffffff; --bubble-team: #dbeafe;
+    --chat-bg: #efeae2; --text: #111b21; --muted: #667781; --tick: #53bdeb;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: #d1d7db;
+         display: flex; justify-content: center; }
+  .app { width: 100%; max-width: 520px; height: 100dvh; display: flex; flex-direction: column; background: var(--chat-bg);
+         box-shadow: 0 0 30px rgba(0,0,0,.18); position: relative; }
+  header { background: var(--green-dark); color: #fff; padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+           padding-top: max(10px, env(safe-area-inset-top)); }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: #dfe5e7; color: var(--green-dark); display: grid;
+            place-items: center; font-weight: 700; flex: none; }
+  .who { flex: 1; min-width: 0; }
+  .who b { display: block; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .who small { opacity: .85; font-size: 12px; }
+  select { background: var(--green); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; padding: 6px 8px;
+           font: inherit; font-size: 13px; max-width: 150px; }
+  select option { color: #111; }
+  .banner { background: #fff3cd; color: #664d03; font-size: 13px; text-align: center; padding: 6px 12px; display: none; }
+  #chat { flex: 1; overflow-y: auto; padding: 14px 10px 8px; display: flex; flex-direction: column; gap: 4px;
+          background-image: radial-gradient(rgba(0,0,0,.045) 1px, transparent 1px); background-size: 18px 18px; }
+  .row { display: flex; flex-direction: column; max-width: 84%; }
+  .row.out { align-self: flex-end; align-items: flex-end; }
+  .row.in { align-self: flex-start; align-items: flex-start; }
+  .bubble { padding: 6px 9px 4px; border-radius: 9px; box-shadow: 0 1px .5px rgba(11,20,26,.13); word-wrap: break-word;
+            overflow-wrap: anywhere; white-space: pre-wrap; }
+  .out .bubble { background: var(--bubble-out); border-top-right-radius: 2px; }
+  .in .bubble { background: var(--bubble-in); border-top-left-radius: 2px; }
+  .team .bubble { background: var(--bubble-team); }
+  .team .tag { font-size: 12px; font-weight: 700; color: #1d4ed8; display: block; margin-bottom: 1px; }
+  .meta { font-size: 11px; color: var(--muted); text-align: right; margin-top: 1px; user-select: none; }
+  .tick { color: var(--tick); }
+  .resp { font-size: 11px; color: #8696a0; margin: 2px 4px 6px; }
+  .typing .bubble { display: flex; gap: 4px; padding: 11px 12px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #90949c; animation: bounce 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: .15s; } .dot:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 6px 10px 0; scrollbar-width: none; }
+  .chip { flex: none; border: 1px solid #b7c9c6; background: #fff; color: var(--green-dark); border-radius: 16px; padding: 5px 11px;
+          font-size: 13px; cursor: pointer; }
+  .chip:hover { background: #e7f5f2; }
+  form { display: flex; gap: 8px; padding: 8px 10px; padding-bottom: max(8px, env(safe-area-inset-bottom)); align-items: flex-end; }
+  textarea { flex: 1; resize: none; border: 0; border-radius: 20px; padding: 10px 14px; font: inherit; max-height: 110px;
+             outline: none; background: #fff; }
+  button.send { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--green); color: #fff; cursor: pointer;
+                display: grid; place-items: center; flex: none; }
+  button.send:disabled { opacity: .5; cursor: default; }
+  .empty { margin: auto; text-align: center; color: var(--muted); font-size: 13px; background: rgba(255,255,255,.7); padding: 8px 14px;
+           border-radius: 8px; max-width: 80%; }
+  dialog { border: 0; border-radius: 12px; padding: 18px; width: min(340px, 92vw); box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  dialog::backdrop { background: rgba(0,0,0,.4); }
+  dialog h3 { margin: 0 0 10px; font-size: 17px; }
+  dialog label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 3px; }
+  dialog input { width: 100%; padding: 9px 10px; border: 1px solid #cfd8dc; border-radius: 8px; font: inherit; }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .actions button { border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; cursor: pointer; }
+  .actions .primary { background: var(--green); color: #fff; } .actions .ghost { background: #eceff1; }
+  .err { color: #b3261e; font-size: 12px; margin-top: 6px; min-height: 16px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="avatar">PA</div>
+    <div class="who"><b>Portfolio Analyst</b><small id="status">online</small></div>
+    <select id="user" aria-label="Switch user"></select>
+  </header>
+  <div class="banner" id="banner">A team member has joined this chat. The assistant is paused.</div>
+  <div id="chat" aria-live="polite"></div>
+  <div class="chips" id="chips"></div>
+  <form id="form">
+    <textarea id="input" rows="1" placeholder="Message" autocomplete="off" maxlength="2000"></textarea>
+    <button class="send" id="send" type="submit" aria-label="Send">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+  </form>
+</div>
+
+<dialog id="newUserDialog">
+  <form method="dialog" id="newUserForm" style="display:block;padding:0">
+    <h3>New user</h3>
+    <label for="nuName">Name</label><input id="nuName" required maxlength="60" autocomplete="off">
+    <label for="nuPhone">Phone (optional)</label><input id="nuPhone" maxlength="20" placeholder="+91 98765 43210" autocomplete="off">
+    <div class="err" id="nuErr"></div>
+    <div class="actions"><button type="button" class="ghost" id="nuCancel">Cancel</button><button class="primary" type="submit">Create</button></div>
+  </form>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const chat = $("chat"), input = $("input"), sendBtn = $("send"), userSel = $("user");
+let userId = null, lastId = 0, waiting = false, poller = null, seen = new Set();
+const CHIPS = ["What does my portfolio look like?", "How much of my portfolio is retail?", "Which property earns the most rent?",
+               "Compare my residential and commercial exposure", "Which of my properties are above ₹10 crore?"];
+
+const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// WhatsApp formatting: *bold*, _italic_ (after HTML-escaping, so no injection)
+const fmt = (s) => esc(s).replace(/\*([^*\n]+)\*/g, "<b>$1</b>").replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s.,!?)])/g, "$1<i>$2</i>");
+const clock = (iso) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const secs = (ms) => (ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
+const scroll = () => { chat.scrollTop = chat.scrollHeight; };
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) { let d = ""; try { d = (await r.json()).detail; } catch (e) {} throw new Error(d || r.statusText); }
+  return r.json();
+}
+
+function addMessage(m, timing) {
+  if (seen.has(m.id)) return;
+  seen.add(m.id); lastId = Math.max(lastId, m.id);
+  $("chat").querySelector(".empty")?.remove();
+  const row = document.createElement("div");
+  const out = m.role === "user";
+  row.className = "row " + (out ? "out" : "in") + (m.role === "human_agent" ? " team" : "");
+  const tag = m.role === "human_agent" ? '<span class="tag">Team member</span>' : "";
+  row.innerHTML = `<div class="bubble">${tag}${fmt(m.content)}<div class="meta">${clock(m.created_at)}${out ? ' <span class="tick">✓✓</span>' : ""}</div></div>`;
+  chat.appendChild(row);
+  if (m.role === "assistant" && (m.latency_ms || timing)) {
+    const ms = m.latency_ms ?? timing.total_ms;
+    const el = document.createElement("div");
+    el.className = "resp";
+    el.textContent = secs(ms) + (timing ? ` · ${timing.llm_calls} LLM call${timing.llm_calls === 1 ? "" : "s"}` : "");
+    row.appendChild(el);
+  }
+  scroll();
+}
+
+function setTyping(on) {
+  $("typing")?.remove();
+  $("status").textContent = on ? "typing…" : "online";
+  if (!on) return;
+  const el = document.createElement("div");
+  el.id = "typing"; el.className = "row in typing";
+  el.innerHTML = '<div class="bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+  chat.appendChild(el); scroll();
+}
+
+async function loadHistory() {
+  chat.innerHTML = ""; seen = new Set(); lastId = 0;
+  const d = await api(`/api/conversations/${userId}/messages`);
+  d.messages.forEach((m) => addMessage(m));
+  if (!d.messages.length) chat.innerHTML = '<div class="empty">Ask about your portfolio, or tell me about a property to add.</div>';
+  $("banner").style.display = d.agent_paused ? "block" : "none";
+}
+
+async function poll() {
+  if (waiting || !userId) return;
+  try {
+    const d = await api(`/api/conversations/${userId}/messages?after_id=${lastId}`);
+    d.messages.forEach((m) => addMessage(m));
+    $("banner").style.display = d.agent_paused ? "block" : "none";
+  } catch (e) { /* transient */ }
+}
+
+async function send(text) {
+  text = text.trim();
+  if (!text || waiting) return;
+  waiting = true; sendBtn.disabled = true; input.value = ""; autosize();
+  addMessage({ id: "tmp" + Date.now(), role: "user", content: text, created_at: new Date().toISOString() });
+  setTyping(true);
+  try {
+    const d = await api("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+                                       body: JSON.stringify({ user_id: userId, message: text }) });
+    setTyping(false);
+    lastId = Math.max(lastId, d.user_message.id); seen.add(d.user_message.id);
+    if (d.reply) addMessage(d.assistant_message, d.timing);
+    $("banner").style.display = d.agent_paused ? "block" : "none";
+  } catch (e) {
+    setTyping(false);
+    addMessage({ id: "err" + Date.now(), role: "assistant", content: "Couldn't reach the server: " + e.message, created_at: new Date().toISOString() });
+  } finally { waiting = false; sendBtn.disabled = false; input.focus(); }
+}
+
+function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 110) + "px"; }
+
+async function loadUsers(select) {
+  const users = await api("/api/users");
+  userSel.innerHTML = users.map((u) => `<option value="${esc(u.user_id)}">${esc(u.name)}</option>`).join("") +
+                      '<option value="__new">＋ New user…</option>';
+  userId = select && users.some((u) => u.user_id === select) ? select : (localStorage.getItem("uid") && users.some((u) => u.user_id === localStorage.getItem("uid")) ? localStorage.getItem("uid") : users[0].user_id);
+  userSel.value = userId;
+}
+
+userSel.addEventListener("change", async () => {
+  if (userSel.value === "__new") { userSel.value = userId; $("newUserDialog").showModal(); $("nuName").focus(); return; }
+  userId = userSel.value; try { localStorage.setItem("uid", userId); } catch (e) {}
+  await loadHistory();
+});
+$("nuCancel").addEventListener("click", () => $("newUserDialog").close());
+$("newUserForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault(); $("nuErr").textContent = "";
+  try {
+    const u = await api("/api/users", { method: "POST", headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ name: $("nuName").value, phone: $("nuPhone").value || null }) });
+    $("newUserDialog").close(); $("nuName").value = ""; $("nuPhone").value = "";
+    await loadUsers(u.user_id); try { localStorage.setItem("uid", u.user_id); } catch (e) {}
+    await loadHistory();
+  } catch (e) { $("nuErr").textContent = e.message; }
+});
+
+$("form").addEventListener("submit", (e) => { e.preventDefault(); send(input.value); });
+input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value); } });
+input.addEventListener("input", autosize);
+$("chips").innerHTML = CHIPS.map((c) => `<button type="button" class="chip">${esc(c)}</button>`).join("");
+$("chips").addEventListener("click", (e) => { if (e.target.classList.contains("chip")) send(e.target.textContent); });
+
+(async () => { await loadUsers(); await loadHistory(); poller = setInterval(poll, 4000); })();
+</script>
+</body>
+</html>

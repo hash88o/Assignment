@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio Admin</title>
+<style>
+  :root { --bg:#f4f6f8; --panel:#fff; --line:#e3e8ec; --text:#17222b; --muted:#6b7b88; --green:#128c7e; --red:#c0392b;
+          --amber:#b9770e; --blue:#1d4ed8; --out:#d9fdd3; --team:#dbeafe; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--text); background:var(--bg);
+         height:100vh; display:flex; flex-direction:column; }
+  .strip { display:flex; gap:10px; padding:10px 14px; background:#0b3d37; color:#fff; align-items:center; flex-wrap:wrap; }
+  .strip h1 { font-size:16px; margin:0 14px 0 0; font-weight:600; }
+  .stat { background:rgba(255,255,255,.1); border-radius:8px; padding:5px 12px; min-width:92px; }
+  .stat b { display:block; font-size:17px; } .stat span { font-size:11px; opacity:.8; text-transform:uppercase; letter-spacing:.04em; }
+  .stat.warn b { color:#ffb4a8; }
+  .main { flex:1; display:flex; min-height:0; }
+  .list { width:330px; background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; flex:none; }
+  .list .tools { padding:10px 12px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .items { overflow-y:auto; flex:1; }
+  .item { padding:10px 12px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .item:hover { background:#f3f8f7; } .item.sel { background:#e6f4f1; box-shadow:inset 3px 0 var(--green); }
+  .item .top { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+  .item .name { font-weight:600; } .item .time { font-size:11px; color:var(--muted); flex:none; }
+  .item .last { color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:2px 0 4px; }
+  .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:10px; font-weight:600; margin-right:4px; }
+  .b-attn { background:#fde7e4; color:var(--red); } .b-human { background:#dbeafe; color:var(--blue); }
+  .b-ok { background:#e2f5ea; color:#1e7a46; } .b-off { background:#eceff1; color:var(--muted); }
+  .detail { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .dhead { background:var(--panel); border-bottom:1px solid var(--line); padding:10px 16px; }
+  .dhead h2 { margin:0; font-size:17px; } .dhead .sub { color:var(--muted); font-size:13px; }
+  .controls { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; align-items:center; }
+  button { font:inherit; border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 12px; cursor:pointer; }
+  button:hover { background:#f1f5f7; } button.primary { background:var(--green); color:#fff; border-color:var(--green); }
+  button.danger { background:#fff; color:var(--red); border-color:#efc4be; } button:disabled { opacity:.5; cursor:default; }
+  .reasons { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+  .reason { background:#fff4e5; color:#8a5300; border:1px solid #f5d9a8; border-radius:6px; padding:1px 8px; font-size:12px; }
+  .scroll { flex:1; overflow-y:auto; padding:14px 16px; }
+  .msg { max-width:78%; margin:0 0 12px; } .msg.user { margin-left:auto; } .msg.user .b { background:var(--out); }
+  .b { background:#fff; border:1px solid var(--line); border-radius:10px; padding:7px 10px; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .msg.human_agent .b { background:var(--team); } .who { font-size:11px; color:var(--muted); margin:0 4px 2px; }
+  .msg.user .who { text-align:right; }
+  details.trace { margin-top:4px; font-size:12px; color:#33434f; }
+  details.trace > summary { cursor:pointer; color:var(--muted); list-style:none; padding:2px 4px; border-radius:4px; }
+  details.trace > summary:hover { background:#e9eef1; } details.trace[open] > summary { color:var(--text); }
+  .tbox { background:#fbfcfd; border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-top:3px; }
+  .tbox h4 { margin:8px 0 3px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); } .tbox h4:first-child { margin-top:0; }
+  table { border-collapse:collapse; width:100%; } th, td { text-align:left; padding:3px 8px 3px 0; vertical-align:top; font-size:12px; }
+  th { color:var(--muted); font-weight:500; } td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  code { font:11.5px ui-monospace,Menlo,monospace; background:#eef2f5; padding:0 4px; border-radius:4px; word-break:break-all; }
+  .err { color:var(--red); font-weight:600; } .yes { color:var(--amber); font-weight:600; }
+  .reply { display:flex; gap:8px; padding:10px 16px; background:var(--panel); border-top:1px solid var(--line); }
+  .reply input { flex:1; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font:inherit; }
+  details.port { margin:0 16px 12px; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 10px; }
+  details.port summary { cursor:pointer; font-weight:600; } .port table { margin-top:6px; }
+  .empty { margin:auto; color:var(--muted); text-align:center; padding:40px; }
+  @media (max-width:760px) { .main { flex-direction:column; } .list { width:100%; max-height:38vh; } .msg { max-width:94%; } }
+</style>
+</head>
+<body>
+<div class="strip" id="strip"><h1>Portfolio Analyst · Admin</h1></div>
+<div class="main">
+  <aside class="list">
+    <div class="tools">
+      <label><input type="checkbox" id="onlyAttn"> Needs attention only</label>
+      <button id="refresh" title="Refresh">↻</button>
+    </div>
+    <div class="items" id="items"></div>
+  </aside>
+  <section class="detail" id="detail"><div class="empty">Select a conversation</div></section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let selected = null, lastList = "", lastDetail = "";
+const openTraces = new Set();
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error((await r.text()) || r.statusText);
+  return r.json();
+}
+const post = (path, body) => api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+const ms = (v) => v == null ? "–" : v >= 1000 ? (v / 1000).toFixed(2) + " s" : Math.round(v) + " ms";
+const usd = (v) => v == null ? "–" : "$" + (v < 0.01 ? v.toFixed(5) : v.toFixed(4));
+const ago = (iso) => { if (!iso) return ""; const s = (Date.now() - new Date(iso)) / 1000;
+  return s < 60 ? "now" : s < 3600 ? Math.floor(s / 60) + "m" : s < 86400 ? Math.floor(s / 3600) + "h" : Math.floor(s / 86400) + "d"; };
+
+async function loadStats() {
+  const s = await api("/api/admin/stats");
+  const stat = (label, v, cls = "") => `<div class="stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
+  $("strip").innerHTML = '<h1>Portfolio Analyst · Admin</h1>' + stat("Conversations", s.conversations) +
+    stat("Needs attention", s.flagged, s.flagged ? "warn" : "") + stat("Agent turns", s.turns) +
+    stat("p50 latency", ms(s.p50_ms)) + stat("p95 latency", ms(s.p95_ms)) + stat("Total cost", usd(s.total_cost_usd));
+}
+
+async function loadList() {
+  const rows = await api("/api/admin/conversations?needs_attention=" + $("onlyAttn").checked);
+  const sig = JSON.stringify(rows) + selected;
+  if (sig === lastList) return; lastList = sig;
+  $("items").innerHTML = rows.map((c) => `
+    <div class="item ${c.user_id === selected ? "sel" : ""}" data-uid="${esc(c.user_id)}">
+      <div class="top"><span class="name">${esc(c.name)}</span><span class="time">${ago(c.last_message_at)}</span></div>
+      <div class="last">${esc(c.last_message || "No messages yet")}</div>
+      <div>${c.needs_attention ? `<span class="badge b-attn">Needs attention · ${c.attention_reasons.length}</span>` : ""}
+           ${c.agent_paused ? '<span class="badge b-human">Human</span>' : ""}
+           ${c.resolved ? '<span class="badge b-ok">Resolved</span>' : ""}
+           <span class="badge b-off">${c.message_count} msgs</span></div>
+    </div>`).join("") || '<div class="empty">Nothing here</div>';
+}
+
+function traceHtml(m) {
+  const t = m.trace;
+  if (!t) return "";
+  const cost = t.llm_calls.reduce((a, c) => a + (c.cost || 0), 0);
+  const llm = t.llm_calls.reduce((a, c) => a + (c.latency_ms || 0), 0);
+  const tool = t.tool_calls.reduce((a, c) => a + (c.latency_ms || 0), 0);
+  const inTok = t.llm_calls.reduce((a, c) => a + (c.input_tokens || 0), 0), outTok = t.llm_calls.reduce((a, c) => a + (c.output_tokens || 0), 0);
+  const label = `Trace · ${ms(t.total_latency_ms)} · ${esc((t.model_used || "no model").split("/").pop())} · ${t.llm_calls.length} LLM · ${t.tool_calls.length} tool${t.fallback_used ? " · <span class='yes'>fallback</span>" : ""}${t.error ? " · <span class='err'>error</span>" : ""}`;
+  return `<details class="trace" data-id="${m.id}" ${openTraces.has(m.id) ? "open" : ""}><summary>${label}</summary><div class="tbox">
+    <h4>Summary</h4>
+    <table><tr><th>Model</th><td>${esc(t.model_used || "–")}</td><th>Fallback used</th><td>${t.fallback_used ? "<span class='yes'>yes</span>" : "no"}</td></tr>
+    <tr><th>Total</th><td>${ms(t.total_latency_ms)}</td><th>LLM / tools / overhead</th><td>${ms(llm)} / ${ms(tool)} / ${ms(Math.max(0, t.total_latency_ms - llm - tool))}</td></tr>
+    <tr><th>Tokens in / out</th><td>${inTok} / ${outTok}</td><th>Cost</th><td>${usd(cost)}</td></tr></table>
+    ${t.error ? `<div class="err">Error: ${esc(t.error)}</div>` : ""}
+    <h4>LLM calls</h4>
+    <table><tr><th>#</th><th>Model</th><th class="num">Start</th><th class="num">Latency</th><th class="num">In</th><th class="num">Out</th><th class="num">Cost</th><th>Result</th></tr>
+    ${t.llm_calls.map((c, i) => `<tr><td>${i + 1}</td><td>${esc(c.model)}</td><td class="num">${ms(c.started_ms)}</td><td class="num">${ms(c.latency_ms)}</td>
+      <td class="num">${c.input_tokens ?? "–"}</td><td class="num">${c.output_tokens ?? "–"}</td><td class="num">${usd(c.cost)}${c.cost_estimated ? "*" : ""}</td>
+      <td>${c.error ? `<span class="err">${esc(c.error)}</span>` : c.requested_tools?.length ? "→ " + c.requested_tools.map(esc).join(", ") : "final answer"}</td></tr>`).join("")}</table>
+    <h4>Tool calls</h4>
+    ${t.tool_calls.length ? `<table><tr><th>Tool</th><th>Args</th><th>Result</th><th class="num">Time</th></tr>
+    ${t.tool_calls.map((c) => `<tr><td><b>${esc(c.name)}</b></td><td><code>${esc(JSON.stringify(c.args))}</code></td>
+      <td>${c.error ? `<span class="err">${esc(c.error)}</span>` : esc(c.result_summary)}</td><td class="num">${ms(c.latency_ms)}</td></tr>`).join("")}</table>` : "<div>No tools called</div>"}
+  </div></details>`;
+}
+
+function propsHtml(props, audit) {
+  const rows = props.map((p) => `<tr><td>${esc(p.property_id)}</td><td>${esc(p.type_group)}</td><td>${esc(p.locality)}, ${esc(p.city)}</td>
+    <td class="num">${Number(p.area_sqft).toLocaleString("en-IN")}</td><td class="num">₹${Number(p.current_estimated_value_inr).toLocaleString("en-IN")}</td>
+    <td class="num">₹${Number(p.annual_rent_inr).toLocaleString("en-IN")}</td><td>${esc(p.occupancy_status)}</td><td>${esc(p.status)}</td></tr>`).join("");
+  const log = audit.map((a) => `<tr><td>${esc(a.created_at.replace("T", " ").slice(0, 19))}</td><td>${esc(a.property_id)}</td><td>${esc(a.action)}</td>
+    <td>${esc(a.field)}</td><td>${esc(a.old_value)} → ${esc(a.new_value)}</td></tr>`).join("");
+  return `<details class="port" ${openTraces.has("port") ? "open" : ""} data-id="port"><summary>Portfolio (${props.filter((p) => p.status === "Active").length} active) &amp; recent changes</summary>
+    <table><tr><th>ID</th><th>Type</th><th>Location</th><th class="num">Sq ft</th><th class="num">Value</th><th class="num">Annual rent</th><th>Occupancy</th><th>Status</th></tr>${rows || "<tr><td colspan=8>No properties</td></tr>"}</table>
+    ${audit.length ? `<table style="margin-top:10px"><tr><th>When (UTC)</th><th>Property</th><th>Action</th><th>Field</th><th>Change</th></tr>${log}</table>` : ""}</details>`;
+}
+
+async function loadDetail(force) {
+  if (!selected) return;
+  const d = await api("/api/admin/conversations/" + selected);
+  const sig = JSON.stringify(d);
+  if (!force && sig === lastDetail) return; lastDetail = sig;
+  const c = d.conversation, u = d.user;
+  const scroller = document.querySelector(".scroll");
+  const atBottom = !scroller || scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 60;
+  const keepTop = scroller ? scroller.scrollTop : 0;
+  const msgs = d.messages.map((m) => `<div class="msg ${m.role}"><div class="who">${m.role === "user" ? esc(u.name) : m.role === "human_agent" ? "Team member" : "Assistant"} · ${esc(m.created_at.slice(11, 19))}</div>
+      <div class="b">${esc(m.content)}</div>${m.role === "assistant" ? traceHtml(m) : ""}</div>`).join("") || '<div class="empty">No messages yet</div>';
+  $("detail").innerHTML = `
+    <div class="dhead"><h2>${esc(u.name)} <span class="sub">${esc(u.user_id)} · ${esc(u.city || "")} · ${esc(u.phone || "no phone")} · prefers ${esc(u.preferences || "–")}</span></h2>
+      <div class="controls">
+        ${c.agent_paused ? '<button class="primary" id="handback">Hand back to agent</button>' : '<button id="takeover">Take over (pause agent)</button>'}
+        <button class="danger" id="resolve" ${c.needs_attention ? "" : "disabled"}>Mark resolved</button>
+        ${c.agent_paused ? '<span class="badge b-human">Agent paused</span>' : ""}${c.resolved ? '<span class="badge b-ok">Resolved</span>' : ""}
+      </div>
+      ${c.attention_reasons.length ? `<div class="reasons">${c.attention_reasons.map((r) => `<span class="reason">${esc(r)}</span>`).join("")}</div>` : ""}
+    </div>
+    <div class="scroll">${msgs}</div>
+    ${propsHtml(d.properties, d.audit)}
+    <form class="reply" id="replyForm"><input id="replyText" placeholder="${c.agent_paused ? "Reply as team member…" : "Reply as team member (tip: take over first so the agent stays quiet)…"}" maxlength="2000" autocomplete="off"><button class="primary">Send</button></form>`;
+  const sc = document.querySelector(".scroll");
+  sc.scrollTop = atBottom ? sc.scrollHeight : keepTop;
+  $("takeover")?.addEventListener("click", async () => { await post(`/api/admin/conversations/${selected}/takeover`); refresh(true); });
+  $("handback")?.addEventListener("click", async () => { await post(`/api/admin/conversations/${selected}/handback`); refresh(true); });
+  $("resolve")?.addEventListener("click", async () => { await post(`/api/admin/conversations/${selected}/resolve`); refresh(true); });
+  $("replyForm").addEventListener("submit", async (e) => {
+    e.preventDefault(); const v = $("replyText").value.trim(); if (!v) return;
+    await post(`/api/admin/conversations/${selected}/reply`, { content: v }); refresh(true);
+  });
+  document.querySelectorAll("details[data-id]").forEach((el) => el.addEventListener("toggle", () => {
+    const id = el.dataset.id === "port" ? "port" : Number(el.dataset.id);
+    el.open ? openTraces.add(id) : openTraces.delete(id);
+  }));
+}
+
+async function refresh(force) {
+  if (force) lastList = "";
+  try { await Promise.all([loadStats(), loadList(), loadDetail(force)]); }
+  catch (e) { console.error(e); }
+}
+
+$("items").addEventListener("click", (e) => {
+  const it = e.target.closest(".item"); if (!it) return;
+  selected = it.dataset.uid; lastList = ""; lastDetail = ""; refresh(true);
+});
+$("onlyAttn").addEventListener("change", () => { lastList = ""; refresh(); });
+$("refresh").addEventListener("click", () => refresh(true));
+refresh(true); setInterval(refresh, 5000);
+</script>
+</body>
+</html>
