@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: portfolio-analyst
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: PRIMARY_MODEL
+        value: poolside/laguna-xs-2.1:free
+      - key: FALLBACK_MODEL
+        value: cohere/north-mini-code:free,inclusionai/ling-3.0-flash-fin:free,openrouter/free
+      - key: DB_PATH
+        value: /app/app.db
