@@ -1,0 +1,19 @@
+# environment / secrets
+.venv/
+.env
+
+# python / test caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# runtime data and generated output
+app.db
+app.db-*
+*.db-wal
+*.db-shm
+scripts/bench_results.json
+
+# local working files (not part of the deliverable)
+CLAUDE.md
+*.pdf
